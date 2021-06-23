@@ -52,18 +52,27 @@ void EndstopCover::loop() {
   const uint32_t now = millis();
 
   if (this->current_operation == COVER_OPERATION_OPENING && this->is_open_()) {
-    float dur = (now - this->start_dir_time_) / 1e3f;
+    auto delta = (now - this->start_dir_time_);
+    float dur = delta / 1e3f;
     ESP_LOGD(TAG, "'%s' - Open endstop reached. Took %.1fs.", this->name_.c_str(), dur);
 
-    this->set_open_duration(uint32_t(ceilf(dur*1e3f)));
+    if (this->start_position == COVER_CLOSED) {
+      ESP_LOGD(TAG, "'%s' - full move - resetting open duration", this->name_.c_str());
+      this->set_open_duration(delta);
+    }
+
     this->start_direction_(COVER_OPERATION_IDLE);
     this->position = COVER_OPEN;
     this->publish_state();
   } else if (this->current_operation == COVER_OPERATION_CLOSING && this->is_closed_()) {
-    float dur = (now - this->start_dir_time_) / 1e3f;
+    auto delta = (now - this->start_dir_time_);
+    float dur = delta / 1e3f;
     ESP_LOGD(TAG, "'%s' - Close endstop reached. Took %.1fs.", this->name_.c_str(), dur);
 
-    this->set_close_duration(uint32_t(ceilf(dur*1e3f)));
+    if (this->start_position == COVER_OPEN) {
+      ESP_LOGD(TAG, "'%s' - full move - resetting close duration", this->name_.c_str());
+      this->set_close_duration(delta);
+    }
     this->start_direction_(COVER_OPERATION_IDLE);
     this->position = COVER_CLOSED;
     this->publish_state();
@@ -145,6 +154,7 @@ void EndstopCover::start_direction_(CoverOperation dir) {
   const uint32_t now = millis();
   this->start_dir_time_ = now;
   this->last_recompute_time_ = now;
+  this->start_position = this->position;
 }
 void EndstopCover::recompute_position_() {
   if (this->current_operation == COVER_OPERATION_IDLE)
