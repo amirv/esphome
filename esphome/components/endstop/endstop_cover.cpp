@@ -55,6 +55,7 @@ void EndstopCover::loop() {
     float dur = (now - this->start_dir_time_) / 1e3f;
     ESP_LOGD(TAG, "'%s' - Open endstop reached. Took %.1fs.", this->name_.c_str(), dur);
 
+    this->set_open_duration(uint32_t(ceilf(dur*1e3f)));
     this->start_direction_(COVER_OPERATION_IDLE);
     this->position = COVER_OPEN;
     this->publish_state();
@@ -62,6 +63,7 @@ void EndstopCover::loop() {
     float dur = (now - this->start_dir_time_) / 1e3f;
     ESP_LOGD(TAG, "'%s' - Close endstop reached. Took %.1fs.", this->name_.c_str(), dur);
 
+    this->set_close_duration(uint32_t(ceilf(dur*1e3f)));
     this->start_direction_(COVER_OPERATION_IDLE);
     this->position = COVER_CLOSED;
     this->publish_state();
