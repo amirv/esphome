@@ -47,9 +47,16 @@ bool ModbusBase::parse_modbus_byte_(uint8_t byte) {
   const uint8_t *raw = &this->rx_buffer_[0];
   ESP_LOGV(TAG, "Modbus recieved Byte  %d (0X%x)", byte, byte);
   // Byte 0: modbus address (match all)
-  if (at == 0)
-    return true;
   uint8_t address = raw[0];
+
+  if (at == 0) {
+    if (address != this->address_) {
+      ESP_LOGW(TAG, "Address is junk (%#x) - dropping", address);
+      this->rx_buffer_.pop_back();
+    }
+
+    return true;
+  }
 
   uint8_t function_code = raw[1];
   // Byte 2: Size (with modbus rtu function code 4/3)
