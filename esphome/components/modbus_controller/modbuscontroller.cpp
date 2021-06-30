@@ -51,7 +51,7 @@ bool ModbusController::send_next_command_() {
   if (!sending && (last_send > this->command_throttle_) && !command_queue_.empty()) {
     sending = true;
     auto &command = command_queue_.front();
-    ESP_LOGD(TAG, "Sending next modbus command %u %u", last_send, this->command_throttle_);
+    ESP_LOGD(TAG, "Sending next modbus command %u func: %u addr: %#x", last_send, uint16_t(command->function_code), command->register_address);
     command->send();
     this->last_command_timestamp_ = millis();
     if (!command->on_data_func) {  // No handler remove from queue directly after sending
