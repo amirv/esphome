@@ -45,13 +45,13 @@ bool ModbusBase::parse_modbus_byte_(uint8_t byte) {
   size_t at = this->rx_buffer_.size();
   this->rx_buffer_.push_back(byte);
   const uint8_t *raw = &this->rx_buffer_[0];
-  ESP_LOGV(TAG, "Modbus recieved Byte  %d (0X%x)", byte, byte);
+  ESP_LOGV(TAG, "read: %#x (%d)", byte, byte);
   // Byte 0: modbus address (match all)
   uint8_t address = raw[0];
 
   if (at == 0) {
     if (address != this->address_) {
-      ESP_LOGW(TAG, "Address is junk (%#x) - dropping", address);
+      ESP_LOGD(TAG, "Address is junk (%#x) - dropping", address);
       this->rx_buffer_.pop_back();
     }
 

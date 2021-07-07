@@ -185,9 +185,13 @@ size_t ModbusController::create_register_ranges() {
   while (ix != sensormap_.end()) {
     // use the lowest non zero value for the whole range
     // Because zero is the default value for skip_updates it is excluded from getting the min value.
-    ESP_LOGV(TAG, "Register '%s': 0x%X %d %d  0x%llx (%d) buffer_offset = %d (0x%X) skip=%u",
-             ix->second->get_sensorname().c_str(), ix->second->start_address, ix->second->register_count,
-             ix->second->offset, ix->second->getkey(), total_register_count, buffer_offset, buffer_offset,
+    ESP_LOGI(TAG, "Register '%s': addr: %#x count: %#x off: %#x | total: %#x buffer_offset: %#x skip=%u",
+             ix->second->get_sensorname().c_str(),
+             ix->second->start_address,
+             ix->second->register_count,
+             ix->second->offset,
+             total_register_count,
+             buffer_offset,
              ix->second->skip_updates);
     if (current_start_address != ix->second->start_address ||
         //  ( prev->second->start_address + prev->second->offset != ix->second->start_address) ||
@@ -205,7 +209,7 @@ size_t ModbusController::create_register_ranges() {
         r.first_sensorkey = first_sensorkey;
         r.skip_updates = skip_updates;
         r.skip_updates_counter = 0;
-        ESP_LOGD(TAG, "Add range 0x%X %d skip:%d", r.start_address, r.register_count, r.skip_updates);
+        ESP_LOGI(TAG, "Add range 0x%X %d skip:%d", r.start_address, r.register_count, r.skip_updates);
         register_ranges_.push_back(r);
       }
       skip_updates = ix->second->skip_updates;
@@ -251,8 +255,8 @@ size_t ModbusController::create_register_ranges() {
 }
 
 void ModbusController::dump_config() {
-  ESP_LOGCONFIG(TAG, "EPSOLAR:");
-  ESP_LOGCONFIG(TAG, "  Address: 0x%02X", this->address_);
+  ESP_LOGCONFIG(TAG, "MODBUS:");
+  ESP_LOGCONFIG(TAG, "  Address: %#x", this->address_);
   for (auto &item : this->sensormap_) {
     item.second->log();
   }
