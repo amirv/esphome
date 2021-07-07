@@ -5,6 +5,7 @@ from esphome.const import CONF_ID, CONF_ADDRESS
 from esphome.cpp_helpers import logging
 from .const import (
     CONF_COMMAND_THROTTLE,
+    CONF_GRACE_PERIOD,
 )
 
 CODEOWNERS = ["@martgras"]
@@ -73,6 +74,9 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(
                 CONF_COMMAND_THROTTLE, default="0ms"
             ): cv.positive_time_period_milliseconds,
+            cv.Optional(
+                CONF_GRACE_PERIOD, default="0ms"
+            ): cv.positive_time_period_milliseconds,
         }
     )
     .extend(cv.polling_component_schema("60s"))
@@ -81,8 +85,9 @@ CONFIG_SCHEMA = cv.All(
 
 
 async def to_code(config):
-    var = cg.new_Pvariable(config[CONF_ID], config[CONF_COMMAND_THROTTLE])
+    var = cg.new_Pvariable(config[CONF_ID], config[CONF_COMMAND_THROTTLE], config[CONF_GRACE_PERIOD])
     cg.add(var.set_command_throttle(config[CONF_COMMAND_THROTTLE]))
+    cg.add(var.set_command_throttle(config[CONF_GRACE_PERIOD]))
     await register_modbus_device(var, config)
 
 

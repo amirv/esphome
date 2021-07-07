@@ -390,7 +390,7 @@ struct ModbusCommandItem {
 
 class ModbusController : public PollingComponent, public modbus::ModbusDevice {
  public:
-  ModbusController(uint16_t throttle = 0) : modbus::ModbusDevice(), command_throttle_(throttle){};
+  ModbusController(uint16_t throttle = 0, uint16_t grace = 0) : modbus::ModbusDevice(), command_throttle_(throttle), grace_period_(grace), in_grace_period_(true){};
   void dump_config() override;
   void loop() override;
   void setup() override;
@@ -412,6 +412,9 @@ class ModbusController : public PollingComponent, public modbus::ModbusDevice {
                                   const std::vector<uint8_t> &data);
   /// called by esphome generated code to set the command_throttle period
   void set_command_throttle(uint16_t command_throttle) { this->command_throttle_ = command_throttle; }
+  void set_grace_period(uint32_t grace_period) {
+    this->grace_period_ = grace_period;
+  }
 
  protected:
   /// parse sensormap_ and create range of sequential addresses
@@ -439,6 +442,8 @@ class ModbusController : public PollingComponent, public modbus::ModbusDevice {
   uint32_t last_command_timestamp_;
   /// min time in ms between sending modbus commands
   uint16_t command_throttle_;
+  uint32_t grace_period_;
+  bool in_grace_period_;
 };
 
 /** convert vector<uint8_t> response payload to float

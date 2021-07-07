@@ -129,6 +129,10 @@ void ModbusController::update_range_(RegisterRange &r) {
 // Once we get a response to the command it is removed from the queue and the next command is send
 //
 void ModbusController::update() {
+  if (in_grace_period_) {
+    return;
+  }
+
   if (!command_queue_.empty()) {
     ESP_LOGV(TAG, "%zu modbus commands already in queue", command_queue_.size());
   } else {
@@ -243,6 +247,7 @@ size_t ModbusController::create_register_ranges_() {
 void ModbusController::dump_config() {
   ESP_LOGCONFIG(TAG, "ModbusController:");
   ESP_LOGCONFIG(TAG, "  Address: 0x%02X", this->address_);
+  ESP_LOGCONFIG(TAG, "  Grace  : %d sec", this->grace_period_);
 #if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE
   ESP_LOGCONFIG(TAG, "sensormap");
   for (auto &it : sensormap_) {
@@ -259,11 +264,21 @@ void ModbusController::loop() {
     if (message != nullptr)
       process_modbus_data_(message.get());
     incoming_queue_.pop();
+    return;
 
-  } else {
-    // all messages processed send pending commmands
-    send_next_command_();
   }
+
+  if (in_grace_period_) {
+    if (millis() < grace_period_) {
+      return;
+    }
+
+    in_grace_period_ = false;
+    ESP_LOGI(TAG, "Finished grace period");
+  }
+
+  // all messages processed send pending commmands
+  send_next_command_();
 }
 
 void ModbusController::on_write_register_response(ModbusRegisterType register_type, uint16_t start_address,
