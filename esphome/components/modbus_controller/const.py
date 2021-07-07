@@ -1,4 +1,5 @@
 CONF_COMMAND_THROTTLE = "command_throttle"
+CONF_GRACE_PERIOD = "grace_period"
 CONF_VALUE_TYPE = "value_type"
 CONF_MODBUS_FUNCTIONCODE = "modbus_functioncode"
 CONF_BITMASK = "bitmask"

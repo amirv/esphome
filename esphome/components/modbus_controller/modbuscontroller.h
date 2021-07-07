@@ -206,7 +206,7 @@ struct ModbusCommandItem {
 
 class ModbusController : public ModbusBase {
  public:
-  ModbusController(uint16_t throttle = 0) : ModbusBase(), command_throttle_(throttle){};
+  ModbusController(uint16_t throttle = 0, uint16_t grace = 0) : ModbusBase(), command_throttle_(throttle), grace_period_(grace), in_grace_period_(true){};
   size_t create_register_ranges();
   void update() override;
   void update_range(RegisterRange &r);
@@ -221,6 +221,9 @@ class ModbusController : public ModbusBase {
                                   const std::vector<uint8_t> &data);
   void on_register_data(ModbusFunctionCode function_code, uint16_t start_address, const std::vector<uint8_t> &data);
   void set_command_throttle(uint16_t command_throttle) { this->command_throttle_ = command_throttle; }
+  void set_grace_period(uint32_t grace_period) {
+    this->grace_period_ = grace_period;
+  }
 
   void queue_command(const ModbusCommandItem &command);
   void add_sensor_item(SensorItem *item) { sensormap_[item->getkey()] = item; }
@@ -237,6 +240,8 @@ class ModbusController : public ModbusBase {
   std::queue<std::unique_ptr<ModbusCommandItem>> incoming_queue_;
   uint32_t last_command_timestamp_;
   uint16_t command_throttle_;
+  uint32_t grace_period_;
+  bool in_grace_period_;
   static std::atomic_bool sending;
 };
 

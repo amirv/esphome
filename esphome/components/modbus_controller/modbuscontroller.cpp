@@ -158,6 +158,10 @@ void ModbusController::update_range(RegisterRange &r) {
 // Once we get a response to the command it is removed from the queue and the next command is send
 //
 void ModbusController::update() {
+  if (in_grace_period_) {
+    return;
+  }
+
   if (!command_queue_.empty()) {
     ESP_LOGW(TAG, "%zu modbus commands already in queue", command_queue_.size());
   } else {
@@ -278,11 +282,21 @@ void ModbusController::loop() {
     if (message != nullptr)
       process_modbus_data(message.get());
     incoming_queue_.pop();
+    return;
 
-  } else {
-    // all messages processed send pending commmands
-    send_next_command_();
   }
+
+  if (in_grace_period_) {
+    if (millis() < grace_period_) {
+      return;
+    }
+
+    in_grace_period_ = false;
+    ESP_LOGI(TAG, "Finished grace period");
+  }
+
+  // all messages processed send pending commmands
+  send_next_command_();
 }
 
 void ModbusController::on_write_register_response(ModbusFunctionCode function_code, uint16_t start_address,
