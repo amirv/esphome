@@ -265,7 +265,9 @@ size_t ModbusController::create_register_ranges() {
 
 void ModbusController::dump_config() {
   ESP_LOGCONFIG(TAG, "MODBUS:");
-  ESP_LOGCONFIG(TAG, "  Address: %#x", this->address_);
+  ESP_LOGCONFIG(TAG, "  Address: %d", this->address_);
+  ESP_LOGCONFIG(TAG, "  Grace  : %d sec", this->grace_period_);
+  ESP_LOGCONFIG(TAG, "  CTRL Pin: GPIO%d", this->ctrl_pin_->get_pin());
   for (auto &item : this->sensormap_) {
     item.second->log();
   }
