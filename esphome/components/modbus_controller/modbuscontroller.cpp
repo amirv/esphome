@@ -119,7 +119,7 @@ void ModbusController::on_register_data(ModbusFunctionCode function_code, uint16
   while (map_it != sensormap_.end() && map_it->second->start_address == start_address) {
     if (map_it->second->register_type == function_code) {
       float val = map_it->second->parse_and_publish(data);
-      ESP_LOGV(TAG, "Sensor : %s = %.02f ", map_it->second->get_sensorname().c_str(), val);
+      ESP_LOGD(TAG, "Sensor : %s = %.02f ", map_it->second->get_sensorname().c_str(), val);
     }
     map_it++;
   }
