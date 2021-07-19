@@ -4,6 +4,7 @@
 
 #include "esphome/core/automation.h"
 #include "esphome/components/modbus/modbus.h"
+#include "esphome/components/sensor/sensor.h"
 
 #include <list>
 #include <map>
@@ -380,6 +381,42 @@ struct ModbusCommandItem {
           &&handler = nullptr);
 };
 
+enum ModbusStatsType {
+  STATS_TIMEOUTS = 0,
+};
+
+class ModbusStatsSensor : public PollingComponent, public sensor::Sensor {
+ public:
+  ModbusStatsSensor()
+      : PollingComponent(5000),
+        sensor::Sensor(),
+        val(0), last_val(-1) {
+  };
+
+  void dump_config() override {};
+
+  void setup() override {
+  };
+
+  void update() override {
+    if (last_val == val)
+      return;
+
+    sensor::Sensor::publish_state(val);
+    last_val = val;
+  };
+
+  void increase() {
+    val++;
+  };
+
+  void add_to_controller(ModbusController *master, enum ModbusStatsType type);
+
+  protected:
+    uint32_t val;
+    uint32_t last_val;
+};
+
 /** Modbus controller class.
  *   Each instance handles the modbus commuinication for all sensors with the same modbus address
  *
@@ -390,7 +427,7 @@ struct ModbusCommandItem {
 
 class ModbusController : public PollingComponent, public modbus::ModbusDevice {
  public:
-  ModbusController(uint16_t throttle = 0, uint16_t grace = 0) : modbus::ModbusDevice(), command_throttle_(throttle), grace_period_(grace), in_grace_period_(true){};
+  ModbusController(uint16_t throttle = 0, uint16_t grace = 0) : modbus::ModbusDevice(), command_throttle_(throttle), grace_period_(grace), in_grace_period_(true), timedout_sensor(nullptr){};
   void dump_config() override;
   void loop() override;
   void setup() override;
@@ -414,6 +451,10 @@ class ModbusController : public PollingComponent, public modbus::ModbusDevice {
   void set_command_throttle(uint16_t command_throttle) { this->command_throttle_ = command_throttle; }
   void set_grace_period(uint32_t grace_period) {
     this->grace_period_ = grace_period;
+  }
+
+  void set_stats_timeouts(ModbusStatsSensor *stats_sensor) {
+    this->timedout_sensor = stats_sensor;
   }
 
   void queue_clear();
@@ -446,6 +487,7 @@ class ModbusController : public PollingComponent, public modbus::ModbusDevice {
   uint16_t command_throttle_;
   uint32_t grace_period_;
   bool in_grace_period_;
+  ModbusStatsSensor *timedout_sensor;
 };
 
 /** convert vector<uint8_t> response payload to float

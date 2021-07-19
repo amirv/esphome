@@ -24,6 +24,9 @@ bool ModbusController::send_next_command_() {
   if ((last_send > this->command_throttle_) && !waiting_for_response() && !command_queue_.empty()) {
     auto &command = command_queue_.front();
 
+    if (this->timedout_sensor)
+      this->timedout_sensor->increase();
+
     ESP_LOGV(TAG, "Sending next modbus command to device %d register 0x%02X count %d", this->address_,
              command->register_address, command->register_count);
     command->send();
@@ -573,6 +576,15 @@ float payload_to_float(const std::vector<uint8_t> &data, SensorValueType sensor_
       break;
   }
   return result;
+}
+
+void ModbusStatsSensor::add_to_controller(ModbusController *master, enum ModbusStatsType type)
+{
+  switch (type) {
+    case STATS_TIMEOUTS:
+      master->set_stats_timeouts(this);
+      break;
+  }
 }
 
 }  // namespace modbus_controller

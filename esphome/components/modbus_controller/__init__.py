@@ -1,8 +1,10 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import modbus
-from esphome.const import CONF_ID, CONF_ADDRESS
+from esphome.const import CONF_ID, CONF_ADDRESS, CONF_TYPE
 from esphome.cpp_helpers import logging
+from esphome.components.sensor import register_sensor
+from esphome.components import sensor
 from .const import (
     CONF_COMMAND_THROTTLE,
     CONF_GRACE_PERIOD,
@@ -62,6 +64,28 @@ SENSOR_VALUE_TYPE = {
     "FP32_R": SensorValueType.FP32_R,
 }
 
+async def new_stats(config):
+    var = cg.new_Pvariable(config[CONF_ID])
+    await cg.register_component(var, config)
+    await register_sensor(var, config)
+    return var
+
+ModbusStatsSensor = modbus_controller_ns.class_(
+    "ModbusStatsSensor", cg.Component, sensor.Sensor, SensorItem
+)
+
+ModbusStatsType = modbus_controller_ns.enum("ModbusStatsType")
+STATS_TYPES = {
+    "TIMEOUTS": ModbusStatsType.STATS_TIMEOUTS,
+}
+
+stats_entry = sensor.SENSOR_SCHEMA.extend(
+    {
+        cv.GenerateID(): cv.declare_id(ModbusStatsSensor),
+        cv.Required(CONF_TYPE): cv.enum(STATS_TYPES, upper=True),
+    }
+)
+
 
 MULTI_CONF = True
 
@@ -77,6 +101,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(
                 CONF_GRACE_PERIOD, default="0ms"
             ): cv.positive_time_period_milliseconds,
+            cv.Optional("stats"): cv.All(cv.ensure_list(stats_entry), cv.Length(min=0)),
         }
     )
     .extend(cv.polling_component_schema("60s"))
@@ -88,6 +113,12 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID], config[CONF_COMMAND_THROTTLE], config[CONF_GRACE_PERIOD])
     cg.add(var.set_command_throttle(config[CONF_COMMAND_THROTTLE]))
     cg.add(var.set_command_throttle(config[CONF_GRACE_PERIOD]))
+    if config.get("stats"):
+        conf = config["stats"]
+        for cfg in conf:
+            stats = await new_stats(cfg)
+            cg.add(stats.add_to_controller(var, cfg[CONF_TYPE]))
+
     await register_modbus_device(var, config)
 
 
