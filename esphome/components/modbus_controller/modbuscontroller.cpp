@@ -45,7 +45,10 @@ void ModbusController::setup() {
 bool ModbusController::send_next_command_() {
   uint32_t last_send = millis() - this->last_command_timestamp_;
 
-  if (sending && last_send > 500) {
+  if (sending && last_send > 500) {\
+    if (this->timedout_sensor)
+      this->timedout_sensor->increase();
+
     sending = false;  // Clear send flag afer 0.5s
   }
   if (!sending && (last_send > this->command_throttle_) && !command_queue_.empty()) {
@@ -446,6 +449,15 @@ bool ModbusCommandItem::send() {
   }
   ESP_LOGV(TAG, "Command sent %d 0x%X %d", uint8_t(this->function_code), this->register_address, this->register_count);
   return true;
+}
+
+void ModbusStatsSensor::add_to_controller(ModbusController *master, enum ModbusStatsType type)
+{
+  switch (type) {
+    case STATS_TIMEOUTS:
+      master->set_stats_timeouts(this);
+      break;
+  }
 }
 
 }  // namespace modbus_controller

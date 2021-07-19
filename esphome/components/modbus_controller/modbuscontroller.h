@@ -204,9 +204,45 @@ struct ModbusCommandItem {
   static ModbusCommandItem create_custom_command(ModbusController *modbusdevice, const std::vector<uint8_t> &values);
 };
 
+
+enum ModbusStatsType {
+  STATS_TIMEOUTS = 0,
+};
+
+class ModbusStatsSensor : public PollingComponent, public sensor::Sensor {
+ public:
+  ModbusStatsSensor(const std::string &name)
+      : PollingComponent(5000),
+        sensor::Sensor(name),
+        val(0), last_val(-1) {
+  };
+
+  void setup() override {
+  };
+
+  void update() override {
+    if (last_val == val)
+      return;
+
+    sensor::Sensor::publish_state(val);
+    last_val = val;
+  };
+
+  void increase() {
+    val++;
+  };
+
+  void add_to_controller(ModbusController *master, enum ModbusStatsType type);
+
+  protected:
+    uint32_t val;
+    uint32_t last_val;
+};
+
 class ModbusController : public ModbusBase {
  public:
-  ModbusController(uint16_t throttle = 0, uint16_t grace = 0) : ModbusBase(), command_throttle_(throttle), grace_period_(grace), in_grace_period_(true){};
+  ModbusController(uint16_t throttle = 0, uint16_t grace = 0) : ModbusBase(), command_throttle_(throttle), grace_period_(grace), in_grace_period_(true), timedout_sensor(nullptr) {
+  };
   size_t create_register_ranges();
   void update() override;
   void update_range(RegisterRange &r);
@@ -223,6 +259,10 @@ class ModbusController : public ModbusBase {
   void set_command_throttle(uint16_t command_throttle) { this->command_throttle_ = command_throttle; }
   void set_grace_period(uint32_t grace_period) {
     this->grace_period_ = grace_period;
+  }
+
+  void set_stats_timeouts(ModbusStatsSensor *stats_sensor) {
+    this->timedout_sensor = stats_sensor;
   }
 
   void queue_command(const ModbusCommandItem &command);
@@ -243,6 +283,7 @@ class ModbusController : public ModbusBase {
   uint32_t grace_period_;
   bool in_grace_period_;
   static std::atomic_bool sending;
+  ModbusStatsSensor *timedout_sensor;
 };
 
 }  // namespace modbus_controller

@@ -14,6 +14,7 @@ from esphome.const import (
     CONF_ADDRESS,
     CONF_OFFSET,
     CONF_NAME,
+    CONF_TYPE,
 )
 from .const import (
     CONF_CTRL_PIN,
@@ -53,6 +54,10 @@ ModbusSwitch = modbus_controller_ns.class_(
 ModbusTextSensor = modbus_controller_ns.class_("ModbusTextSensor", cg.Nameable)
 ModbusSensor = modbus_controller_ns.class_(
     "ModbusSensor", core_sensor.Sensor, cg.Component
+)
+
+ModbusStatsSensor = modbus_controller_ns.class_(
+    "ModbusStatsSensor", core_sensor.Sensor, cg.Component
 )
 
 ModbusBinarySensor = modbus_controller_ns.class_(
@@ -95,6 +100,18 @@ RAW_ENCODING = {
     "COMMA": RawEncodingType.COMMA,
 }
 
+
+ModbusStatsType = modbus_controller_ns.enum("ModbusStatsType")
+STATS_TYPES = {
+    "TIMEOUTS": ModbusStatsType.STATS_TIMEOUTS,
+}
+
+stats_entry = core_sensor.SENSOR_SCHEMA.extend(
+    {
+        cv.GenerateID(): cv.declare_id(ModbusStatsSensor),
+        cv.Required(CONF_TYPE): cv.enum(STATS_TYPES, upper=True),
+    }
+)
 
 sensor_entry = core_sensor.SENSOR_SCHEMA.extend(
     {
@@ -156,6 +173,7 @@ CONFIG_SCHEMA = (
             cv.Optional(
                 CONF_GRACE_PERIOD, default="0ms"
             ): cv.positive_time_period_milliseconds,
+            cv.Optional("stats"): cv.All(cv.ensure_list(stats_entry), cv.Length(min=0)),
             cv.Optional("sensors"): cv.All(
                 cv.ensure_list(sensor_entry), cv.Length(min=0)
             ),
@@ -183,6 +201,13 @@ def to_code(config):
     yield cg.add(var.set_grace_period(config[CONF_GRACE_PERIOD]))
     yield cg.register_component(var, config)
     yield register_modbus_device(var, config)
+
+    if config.get("stats"):
+        conf = config["stats"]
+        for cfg in conf:
+            stats = yield new_stats(cfg)
+            cg.add(stats.add_to_controller(var, cfg[CONF_TYPE]))
+
     if config.get("sensors"):
         conf = config["sensors"]
         for cfg in conf:
@@ -242,6 +267,14 @@ def to_code(config):
                     cfg[CONF_BITMASK],
                 )
             )
+
+
+@coroutine
+def new_stats(config):
+    var = cg.new_Pvariable(config[CONF_ID], config[CONF_NAME])
+    yield cg.register_component(var, config)
+    yield core_sensor.register_sensor(var, config)
+    yield var
 
 
 @coroutine
