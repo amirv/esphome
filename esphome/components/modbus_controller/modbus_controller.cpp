@@ -125,7 +125,7 @@ void ModbusController::update_range_(RegisterRange &r) {
            r.skip_updates_counter);
   if (r.skip_updates_counter == 0) {
     ModbusCommandItem command_item =
-        ModbusCommandItem::create_read_command(this, r.register_type, r.start_address, r.register_count);
+        ModbusCommandItem::create_read_command(this, r.register_type, r.start_address, r.register_count*2);
     queue_command(command_item);
     r.skip_updates_counter = r.skip_updates;  // reset counter to config value
   } else {
