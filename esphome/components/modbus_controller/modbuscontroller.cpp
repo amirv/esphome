@@ -128,6 +128,11 @@ void ModbusController::on_register_data(ModbusFunctionCode function_code, uint16
   }
 }
 
+void ModbusController::queue_clear() {
+  ESP_LOGI(TAG, "Clearing send queue");
+  command_queue_.clear();
+}
+
 void ModbusController::queue_command(const ModbusCommandItem &command) {
   // check if this commmand is already qeued.
   // not very effective but the queue is never really large

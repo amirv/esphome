@@ -265,6 +265,7 @@ class ModbusController : public ModbusBase {
     this->timedout_sensor = stats_sensor;
   }
 
+  void queue_clear();
   void queue_command(const ModbusCommandItem &command);
   void add_sensor_item(SensorItem *item) { sensormap_[item->getkey()] = item; }
 
