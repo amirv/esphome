@@ -416,6 +416,8 @@ class ModbusController : public PollingComponent, public modbus::ModbusDevice {
     this->grace_period_ = grace_period;
   }
 
+  void queue_clear();
+
  protected:
   /// parse sensormap_ and create range of sequential addresses
   size_t create_register_ranges_();
