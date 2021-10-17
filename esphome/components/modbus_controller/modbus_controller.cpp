@@ -153,6 +153,13 @@ void ModbusController::update() {
   }
 }
 
+void ModbusController::force_update() {
+  for (auto &r : this->register_ranges_) {
+    ESP_LOGVV(TAG, "Updating range 0x%X", r.start_address);
+    update_range_(r);
+  }
+}
+
 // walk through the sensors and determine the registerranges to read
 size_t ModbusController::create_register_ranges_() {
   register_ranges_.clear();

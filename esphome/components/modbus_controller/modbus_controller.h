@@ -432,6 +432,7 @@ class ModbusController : public PollingComponent, public modbus::ModbusDevice {
   void loop() override;
   void setup() override;
   void update() override;
+  void force_update();
 
   /// queues a modbus command in the send queue
   void queue_command(const ModbusCommandItem &command);
